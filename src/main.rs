@@ -84,8 +84,8 @@ fn main() -> Result<(), Box<Error>> {
         .get("https://api.iextrading.com/1.0/stock/pvtl/price")
         .send()?
         .text()?
-        .parse::<f64>()?;
-    let stock_price = Dollars::new(stock_price);
+        .parse()
+        .map(Dollars::new)?;
 
     let equities: Vec<_> = grants
         .iter()

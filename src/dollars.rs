@@ -1,4 +1,7 @@
-use std::ops::{Mul, Sub};
+use std::{
+    fmt::{self, Display, Formatter},
+    ops::{Mul, Sub},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Dollars {
@@ -13,12 +16,11 @@ impl Dollars {
             cents: (amount.fract() * 100.0) as u8,
         }
     }
+}
 
-    fn from_parts(whole: u32, cents: u32) -> Self {
-        Dollars {
-            whole: whole + cents / 100,
-            cents: (cents % 100) as u8,
-        }
+impl Display for Dollars {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        write!(f, "${}.{}", self.whole, self.cents)
     }
 }
 
@@ -58,5 +60,14 @@ impl Mul<f64> for Dollars {
         let cents = (self.cents as f64 * multiplier) as u32;
         let whole = (self.whole as f64 * multiplier) as u32;
         Dollars::from_parts(whole, cents)
+    }
+}
+
+impl Dollars {
+    fn from_parts(whole: u32, cents: u32) -> Self {
+        Dollars {
+            whole: whole + cents / 100,
+            cents: (cents % 100) as u8,
+        }
     }
 }
