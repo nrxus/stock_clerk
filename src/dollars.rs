@@ -47,8 +47,8 @@ impl Mul<u16> for Dollars {
 
     fn mul(self, multiplier: u16) -> Dollars {
         let multiplier = multiplier as u32;
-        let cents = (self.cents as u32) * multiplier;
-        let whole = self.whole * multiplier;
+        let cents = multiplier * self.cents as u32;
+        let whole = multiplier * self.whole;
         Dollars::from_parts(whole, cents)
     }
 }
@@ -57,8 +57,8 @@ impl Mul<f64> for Dollars {
     type Output = Dollars;
 
     fn mul(self, multiplier: f64) -> Dollars {
-        let cents = (self.cents as f64 * multiplier) as u32;
-        let whole = (self.whole as f64 * multiplier) as u32;
+        let cents = (multiplier * self.cents as f64) as u32;
+        let whole = (multiplier * self.whole as f64) as u32;
         Dollars::from_parts(whole, cents)
     }
 }
