@@ -1,0 +1,8 @@
+[package]
+name = "stock_clerk"
+version = "0.1.0"
+authors = ["Andres <andresnrx@gmail.com>"]
+
+[dependencies]
+chrono = ">=0.4"
+reqwest = ">=0.8"
