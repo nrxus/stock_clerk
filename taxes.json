@@ -1,0 +1,190 @@
+{
+  "single": {
+    "brackets": [
+      {
+        "bracket_max": 0,
+        "rate": 10,
+        "capital_gain_rate": 0,
+        "base_amount": 0
+      },
+      {
+        "bracket_max": 9525,
+        "rate": 12,
+        "capital_gain_rate": 0,
+        "base_amount": 952.5
+      },
+      {
+        "bracket_max": 38700,
+        "rate": 22,
+        "capital_gain_rate": 15,
+        "base_amount": 4453.5
+      },
+      {
+        "bracket_max": 82500,
+        "rate": 24,
+        "capital_gain_rate": 15,
+        "base_amount": 14089.5
+      },
+      {
+        "bracket_max": 157500,
+        "rate": 32,
+        "capital_gain_rate": 15,
+        "base_amount": 32089.5
+      },
+      {
+        "bracket_max": 200000,
+        "rate": 35,
+        "capital_gain_rate": 15,
+        "base_amount": 45689.5
+      },
+      {
+        "bracket_max": 500000,
+        "rate": 37,
+        "capital_gain_rate": 20,
+        "base_amount": 150689.5
+      }
+    ],
+    "deduction": 12000.0
+  },
+  "married": {
+    "brackets": [
+      {
+        "bracket_max": 0,
+        "rate": 10,
+        "capital_gain_rate": 0,
+        "base_amount": 0
+      },
+      {
+        "bracket_max": 19050,
+        "rate": 12,
+        "capital_gain_rate": 0,
+        "base_amount": 1905
+      },
+      {
+        "bracket_max": 77400,
+        "rate": 22,
+        "capital_gain_rate": 15,
+        "base_amount": 8907
+      },
+      {
+        "bracket_max": 165000,
+        "rate": 24,
+        "capital_gain_rate": 15,
+        "base_amount": 28179
+      },
+      {
+        "bracket_max": 315000,
+        "rate": 32,
+        "capital_gain_rate": 15,
+        "base_amount": 64179
+      },
+      {
+        "bracket_max": 400000,
+        "rate": 35,
+        "capital_gain_rate": 15,
+        "base_amount": 91379
+      },
+      {
+        "bracket_max": 600000,
+        "rate": 37,
+        "capital_gain_rate": 20,
+        "base_amount": 161379
+      }
+    ],
+    "deduction": 24000.0
+  },
+  "married_separately": {
+    "brackets": [
+      {
+        "bracket_max": 0,
+        "rate": 10,
+        "capital_gain_rate": 0,
+        "base_amount": 0
+      },
+      {
+        "bracket_max": 9525,
+        "rate": 12,
+        "capital_gain_rate": 0,
+        "base_amount": 952.5
+      },
+      {
+        "bracket_max": 38700,
+        "rate": 22,
+        "capital_gain_rate": 15,
+        "base_amount": 4453.5
+      },
+      {
+        "bracket_max": 82500,
+        "rate": 24,
+        "capital_gain_rate": 15,
+        "base_amount": 14089.5
+      },
+      {
+        "bracket_max": 157500,
+        "rate": 32,
+        "capital_gain_rate": 15,
+        "base_amount": 32089.5
+      },
+      {
+        "bracket_max": 200000,
+        "rate": 35,
+        "capital_gain_rate": 15,
+        "base_amount": 45689.5
+      },
+      {
+        "bracket_max": 300000,
+        "rate": 37,
+        "capital_gain_rate": 20,
+        "base_amount": 80689.5
+      }
+    ],
+    "deduction": 12000.0
+  },
+  "head_of_household": {
+    "brackets": [
+      {
+        "bracket_max": 0,
+        "rate": 10,
+        "capital_gain_rate": 0,
+        "base_amount": 0
+      },
+      {
+        "bracket_max": 13600,
+        "rate": 12,
+        "capital_gain_rate": 0,
+        "base_amount": 1360
+      },
+      {
+        "bracket_max": 51800,
+        "rate": 22,
+        "capital_gain_rate": 15,
+        "base_amount": 5944
+      },
+      {
+        "bracket_max": 82500,
+        "rate": 24,
+        "capital_gain_rate": 15,
+        "base_amount": 12698
+      },
+      {
+        "bracket_max": 157500,
+        "rate": 32,
+        "capital_gain_rate": 15,
+        "base_amount": 30698
+      },
+      {
+        "bracket_max": 200000,
+        "rate": 35,
+        "capital_gain_rate": 15,
+        "base_amount": 44298
+      },
+      {
+        "bracket_max": 500000,
+        "rate": 37,
+        "capital_gain_rate": 20,
+        "base_amount": 149298
+      }
+    ],
+    "deduction": 18000.0
+  }
+}
