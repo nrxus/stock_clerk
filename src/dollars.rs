@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer};
 
 use std::{
     fmt::{self, Display, Formatter},
-    ops::{Mul, Sub},
+    ops::{Add, Mul, Sub},
 };
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -39,17 +39,37 @@ impl Sub for Dollars {
     type Output = Dollars;
 
     fn sub(self, subtrahend: Dollars) -> Dollars {
-        let mut whole = self.whole - subtrahend.whole;
+        let whole = self.whole - subtrahend.whole;
         let cents = self.cents as i8 - subtrahend.cents as i8;
 
-        let cents = if cents < 0 {
-            whole -= 1;
-            (cents + 100)
+        if cents < 0 {
+            Dollars {
+                whole: whole - 1,
+                cents: (cents + 100) as u8,
+            }
         } else {
-            cents
-        } as u8;
+            Dollars {
+                whole,
+                cents: cents as u8,
+            }
+        }
+    }
+}
 
-        Dollars { whole, cents }
+impl Add for Dollars {
+    type Output = Dollars;
+
+    fn add(self, adder: Dollars) -> Dollars {
+        let whole = self.whole + adder.whole;
+        let cents = self.cents + adder.cents;
+        if cents > 99 {
+            Dollars {
+                whole: whole + 1,
+                cents: cents - 100,
+            }
+        } else {
+            Dollars { whole, cents }
+        }
     }
 }
 
@@ -68,9 +88,9 @@ impl Mul<f64> for Dollars {
     type Output = Dollars;
 
     fn mul(self, multiplier: f64) -> Dollars {
-        let cents = (multiplier * self.cents as f64) as u32;
-        let whole = (multiplier * self.whole as f64) as u32;
-        Dollars::from_parts(whole, cents)
+        let cents = Dollars::from_parts(0, (multiplier * self.cents as f64) as u32);
+        let whole = Dollars::new(multiplier * self.whole as f64);
+        whole + cents
     }
 }
 
@@ -88,10 +108,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn multiplies() {
-        let count = 2343;
+    fn multiplies_integer() {
+        let multiplier = 2343;
         let amount = Dollars::new(23.45);
-        let actual = amount * count;
-        assert_eq!(Dollars::new(54943.35), actual);
+        let actual = amount * multiplier;
+        let expected = Dollars::new(54943.35);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn multiplies_float() {
+        let multiplier = 23.43;
+        let amount = Dollars::new(32.67);
+        println!("Dollars: {:?}", amount);
+        let actual = amount * multiplier;
+        let expected = Dollars::new(765.45); //765.4581 truncated
+        assert_eq!(expected, actual);
     }
 }
