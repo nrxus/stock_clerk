@@ -11,7 +11,7 @@ pub struct Equity {
 
 impl Equity {
     pub fn new(grant: &Grant, date: &impl Datelike, stock_price: Dollars) -> Self {
-        let vested = (grant.start.percent_awarded(date) * grant.total as f64) as u16;
+        let vested = (grant.start.percent_awarded(date) * f64::from(grant.total)) as u16;
         let unvested = grant.total - vested;
         Equity {
             vested: Stock::new(vested, grant.price, stock_price),
@@ -30,7 +30,7 @@ pub struct Stock {
 impl Stock {
     fn new(count: u16, grant_price: Dollars, stock_price: Dollars) -> Self {
         Stock {
-            count: count,
+            count,
             cost: grant_price * count,
             revenue: stock_price * count,
         }
@@ -38,14 +38,6 @@ impl Stock {
 
     pub fn gross_profit(&self) -> Dollars {
         self.revenue - self.cost
-    }
-
-    pub fn net_profit(&self) -> Dollars {
-        self.gross_profit() - self.tax()
-    }
-
-    pub fn tax(&self) -> Dollars {
-        self.gross_profit() * 0.25
     }
 }
 
@@ -60,7 +52,7 @@ impl<T: Datelike> AwardDate for T {
         if elapsed < 12 {
             0.0
         } else {
-            elapsed as f64 * 0.25 / 12.0
+            f64::from(elapsed) * 0.25 / 12.0
         }
     }
 

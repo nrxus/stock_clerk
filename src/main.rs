@@ -48,8 +48,8 @@ fn main() -> Result<(), Box<Error>> {
     equities.iter().map(|e| e.vested).for_each(|v| {
         println!("Option:  ");
         println!("\tgross profit: {:>10}", v.gross_profit().to_string());
-        println!("\ttax: {:>10}", v.tax().to_string());
-        println!("\tnet profit: {:>10}", v.net_profit().to_string());
+        // println!("\ttax: {:>10}", v.tax().to_string());
+        // println!("\tnet profit: {:>10}", v.net_profit().to_string());
     });
     Ok(())
 }

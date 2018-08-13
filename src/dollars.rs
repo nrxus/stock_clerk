@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer};
 
 use std::{
+    cmp::{Ordering, PartialOrd},
     fmt::{self, Display, Formatter},
     ops::{Add, Mul, Sub},
 };
@@ -77,8 +78,8 @@ impl Mul<u16> for Dollars {
     type Output = Dollars;
 
     fn mul(self, multiplier: u16) -> Dollars {
-        let multiplier = multiplier as u32;
-        let cents = multiplier * self.cents as u32;
+        let multiplier = u32::from(multiplier);
+        let cents = multiplier * u32::from(self.cents);
         let whole = multiplier * self.whole;
         Dollars::from_parts(whole, cents)
     }
@@ -88,9 +89,19 @@ impl Mul<f64> for Dollars {
     type Output = Dollars;
 
     fn mul(self, multiplier: f64) -> Dollars {
-        let cents = Dollars::from_parts(0, (multiplier * self.cents as f64) as u32);
-        let whole = Dollars::new(multiplier * self.whole as f64);
+        let cents = Dollars::from_parts(0, (multiplier * f64::from(self.cents)) as u32);
+        let whole = Dollars::new(multiplier * f64::from(self.whole));
         whole + cents
+    }
+}
+
+impl PartialOrd for Dollars {
+    fn partial_cmp(&self, rhs: &Dollars) -> Option<Ordering> {
+        if self.whole == rhs.whole {
+            self.cents.partial_cmp(&rhs.cents)
+        } else {
+            self.whole.partial_cmp(&rhs.whole)
+        }
     }
 }
 
@@ -137,5 +148,12 @@ mod tests {
         let actual = Dollars::new(26.41) + Dollars::new(52.84);
         let expected = Dollars::new(79.25);
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn compare() {
+        assert!(Dollars::new(23.31) > Dollars::new(12.34));
+        assert!(Dollars::new(23.29) < Dollars::new(23.31));
+        assert!(Dollars::new(12.29) == Dollars::new(12.29));
     }
 }
