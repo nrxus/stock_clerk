@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = ["Andres <andresnrx@gmail.com>"]
 
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = ">=0.4", features = ["serde"] }
+enum-map = { version = ">=0.4", features = ["serde"] }
 reqwest = ">=0.8"
 serde = ">=1.0"
 serde_derive = ">=1.0"

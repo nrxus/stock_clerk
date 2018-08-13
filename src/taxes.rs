@@ -1,5 +1,8 @@
 use dollars::Dollars;
+use enum_map::EnumMap;
 
+#[derive(Debug, Enum, Deserialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
 enum FilingStatus {
     Single,
     Married,
@@ -14,10 +17,8 @@ struct TaxUser {
 
 #[derive(Deserialize)]
 pub struct TaxTable {
-    pub single: TaxInformation,
-    pub married: TaxInformation,
-    pub married_separately: TaxInformation,
-    pub head_of_household: TaxInformation,
+    #[serde(flatten)]
+    info: EnumMap<FilingStatus, TaxInformation>,
 }
 
 #[derive(Deserialize)]
@@ -36,19 +37,12 @@ pub struct TaxBracket {
 
 impl TaxTable {
     fn bracket_for(&self, user: &TaxUser) -> &TaxBracket {
-        let tax_info = match user.status {
-            FilingStatus::Single => &self.single,
-            FilingStatus::Married => &self.married,
-            FilingStatus::MarriedSeparately => &self.married_separately,
-            FilingStatus::HeadOfHousehold => &self.head_of_household,
-        };
-
-        let brackets = &tax_info.brackets;
+        let brackets = &self.info[user.status].brackets;
         brackets
             .windows(2)
             .find(|pair| pair[1].bracket_start > user.income)
             .map(|pair| &pair[0])
-            .unwrap_or_else(|| &brackets[tax_info.brackets.len() - 1])
+            .unwrap_or_else(|| &brackets[brackets.len() - 1])
     }
 }
 
