@@ -3,16 +3,16 @@ use enum_map::EnumMap;
 
 #[derive(Debug, Enum, Deserialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
-enum FilingStatus {
+pub enum FilingStatus {
     Single,
     Married,
     MarriedSeparately,
     HeadOfHousehold,
 }
 
-struct TaxUser {
-    income: Dollars,
-    status: FilingStatus,
+pub struct TaxUser {
+    pub income: Dollars,
+    pub status: FilingStatus,
 }
 
 #[derive(Deserialize)]
@@ -36,7 +36,7 @@ pub struct TaxBracket {
 }
 
 impl TaxTable {
-    fn bracket_for(&self, user: &TaxUser) -> &TaxBracket {
+    pub fn bracket_for(&self, user: &TaxUser) -> &TaxBracket {
         let brackets = &self.info[user.status].brackets;
         brackets
             .windows(2)
@@ -61,7 +61,7 @@ mod tests {
         };
 
         let bracket = subject.bracket_for(&user);
-        assert_eq!(bracket, &subject.single.brackets[4]);
+        assert_eq!(bracket, &subject.info[FilingStatus::Single].brackets[4]);
     }
 
     #[test]
@@ -73,7 +73,7 @@ mod tests {
         };
 
         let bracket = subject.bracket_for(&user);
-        assert_eq!(bracket, &subject.married.brackets[3]);
+        assert_eq!(bracket, &subject.info[FilingStatus::Married].brackets[3]);
     }
 
     #[test]
@@ -85,7 +85,10 @@ mod tests {
         };
 
         let bracket = subject.bracket_for(&user);
-        assert_eq!(bracket, &subject.head_of_household.brackets[6]);
+        assert_eq!(
+            bracket,
+            &subject.info[FilingStatus::HeadOfHousehold].brackets[6]
+        );
     }
 
     fn subject() -> TaxTable {

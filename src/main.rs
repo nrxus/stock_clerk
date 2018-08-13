@@ -9,27 +9,23 @@ extern crate enum_map;
 
 mod dollars;
 mod equity;
+mod tax_calculator;
 mod taxes;
 mod user_data;
 
 use dollars::Dollars;
 use equity::Equity;
-use taxes::TaxTable;
+use tax_calculator::TaxCalculator;
+use taxes::{TaxTable, TaxUser};
 use user_data::UserData;
 
-use chrono::{Local, NaiveDate};
+use chrono::Local;
 
 use std::error::Error;
 
-#[derive(Debug, Deserialize)]
-pub struct Grant {
-    price: Dollars,
-    total: u16,
-    start: NaiveDate,
-}
-
 fn main() -> Result<(), Box<Error>> {
     let tax_table: TaxTable = serde_json::from_str(include_str!("../taxes.json"))?;
+    let tax_calculator = TaxCalculator::new(tax_table);
     let user_data: UserData = serde_json::from_str(include_str!("../user_data.json"))?;
     let grants = user_data.grants;
     let today = Local::today();
@@ -47,10 +43,18 @@ fn main() -> Result<(), Box<Error>> {
         .map(|g| Equity::new(g, &today, stock_price))
         .collect();
 
-    equities.iter().map(|e| e.vested).for_each(|v| {
-        println!("Option:  ");
-        println!("\tgross profit: {:>10}", v.gross_profit().to_string());
-        // println!("\ttax: {:>10}", v.tax().to_string());
+    let user = TaxUser {
+        income: user_data.income,
+        status: user_data.filing_status,
+    };
+
+    equities.iter().map(|e| e.vested).for_each(|equity| {
+        println!("Vested Equity:  ");
+        println!("\tgross profit: {}", equity.gross_profit().to_string());
+        println!(
+            "\ttax: {}",
+            tax_calculator.taxes_for_user(&user, equity.gross_profit())
+        )
         // println!("\tnet profit: {:>10}", v.net_profit().to_string());
     });
     Ok(())

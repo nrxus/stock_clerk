@@ -1,5 +1,5 @@
 use dollars::Dollars;
-use Grant;
+use user_data::Grant;
 
 use chrono::Datelike;
 
