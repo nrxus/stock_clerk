@@ -120,9 +120,22 @@ mod tests {
     fn multiplies_float() {
         let multiplier = 23.43;
         let amount = Dollars::new(32.67);
-        println!("Dollars: {:?}", amount);
         let actual = amount * multiplier;
         let expected = Dollars::new(765.45); //765.4581 truncated
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn substracts() {
+        let actual = Dollars::new(23.34) - Dollars::new(12.41);
+        let expected = Dollars::new(10.93);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn adds() {
+        let actual = Dollars::new(26.41) + Dollars::new(52.84);
+        let expected = Dollars::new(79.25);
         assert_eq!(expected, actual);
     }
 }
