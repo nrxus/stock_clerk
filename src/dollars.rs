@@ -1,9 +1,11 @@
+use serde::{Deserialize, Deserializer};
+
 use std::{
     fmt::{self, Display, Formatter},
     ops::{Mul, Sub},
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Dollars {
     whole: u32,
     cents: u8,
@@ -13,8 +15,17 @@ impl Dollars {
     pub fn new(amount: f64) -> Self {
         Dollars {
             whole: amount as u32,
-            cents: (amount.fract() * 100.0) as u8,
+            cents: (amount.fract() * 100.0).round() as u8,
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for Dollars {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        f64::deserialize(deserializer).map(Dollars::new)
     }
 }
 
@@ -69,5 +80,18 @@ impl Dollars {
             whole: whole + cents / 100,
             cents: (cents % 100) as u8,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn multiplies() {
+        let count = 2343;
+        let amount = Dollars::new(23.45);
+        let actual = amount * count;
+        assert_eq!(Dollars::new(54943.35), actual);
     }
 }

@@ -1,22 +1,25 @@
 extern crate chrono;
 extern crate reqwest;
 extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 
 mod dollars;
 
 use dollars::Dollars;
 
-use chrono::{Date, Datelike, Local, TimeZone};
+use chrono::{Datelike, Local, NaiveDate};
 
 use std::error::Error;
 
 trait AwardDate {
-    fn percent_awarded(&self, date: Date<Local>) -> f64;
-    fn months_until(&self, later: Date<Local>) -> u32;
+    fn percent_awarded(&self, date: impl Datelike) -> f64;
+    fn months_until(&self, later: impl Datelike) -> u32;
 }
 
-impl AwardDate for Date<Local> {
-    fn percent_awarded(&self, date: Date<Local>) -> f64 {
+impl<T: Datelike> AwardDate for T {
+    fn percent_awarded(&self, date: impl Datelike) -> f64 {
         let elapsed = self.months_until(date);
         if elapsed < 12 {
             0.0
@@ -25,20 +28,21 @@ impl AwardDate for Date<Local> {
         }
     }
 
-    fn months_until(&self, later: Date<Local>) -> u32 {
+    fn months_until(&self, later: impl Datelike) -> u32 {
         let years = later.year() - self.year();
         let months = later.month() as i32 - self.month() as i32;
         (years * 12 + months) as u32
     }
 }
 
-#[derive(Debug)]
-struct Value {
+#[derive(Debug, Clone, Copy)]
+struct Stock {
     cost: Dollars,
     revenue: Dollars,
+    count: u16,
 }
 
-impl Value {
+impl Stock {
     fn gross_profit(&self) -> Dollars {
         self.revenue - self.cost
     }
@@ -54,30 +58,19 @@ impl Value {
 
 #[derive(Debug)]
 struct Equity {
-    vested: Value,
-    unvested: Value,
+    vested: Stock,
+    unvested: Stock,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 struct Grant {
     price: Dollars,
     total: u16,
-    start: Date<Local>,
+    start: NaiveDate,
 }
 
 fn main() -> Result<(), Box<Error>> {
-    let grants = vec![
-        Grant {
-            price: Dollars::new(8.16),
-            total: 3750,
-            start: Local.ymd(2016, 02, 08),
-        },
-        Grant {
-            price: Dollars::new(9.90),
-            total: 3875,
-            start: Local.ymd(2017, 08, 08),
-        },
-    ];
+    let grants: Vec<Grant> = serde_json::from_str(include_str!("../user_data.json"))?;
     let today = Local::today();
 
     let http_client = reqwest::Client::new();
@@ -94,20 +87,25 @@ fn main() -> Result<(), Box<Error>> {
             let vested = (g.start.percent_awarded(today) * g.total as f64) as u16;
             let unvested = g.total - vested;
             Equity {
-                vested: Value {
+                vested: Stock {
+                    count: vested,
                     cost: g.price * vested,
                     revenue: stock_price * vested,
                 },
-                unvested: Value {
+                unvested: Stock {
+                    count: unvested,
                     cost: g.price * unvested,
                     revenue: stock_price * unvested,
                 },
             }
         })
-        .map(|e| e.vested.gross_profit())
         .collect();
 
-    println!("grants: {:#?}", grants);
-    println!("equities: {:#?}", equities);
+    equities.iter().map(|e| e.vested).for_each(|v| {
+        println!("Option:  ");
+        println!("\tgross profit: {:>10}", v.gross_profit().to_string());
+        println!("\ttax: {:>10}", v.tax().to_string());
+        println!("\tnet profit: {:>10}", v.net_profit().to_string());
+    });
     Ok(())
 }
