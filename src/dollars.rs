@@ -40,7 +40,7 @@ impl<'de> Deserialize<'de> for Dollars {
 
 impl Display for Dollars {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        write!(f, "${}.{}", self.whole, self.cents)
+        f.pad(&format!("${}.{:02}", self.whole, self.cents))
     }
 }
 

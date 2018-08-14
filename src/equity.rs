@@ -45,9 +45,9 @@ impl Stock {
 
 impl Display for Stock {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        writeln!(f, "      Cost: {}", self.cost)?;
-        writeln!(f, "      Revenue: {}", self.revenue)?;
-        write!(f, "      Gross Profit: {}", self.gross_profit())?;
+        writeln!(f, "      {:<14} {:>10}", "Cost:", self.cost)?;
+        writeln!(f, "      {:<14} {:>10}", "Revenue:", self.revenue)?;
+        write!(f, "      {:<14} {:>10}", "Gross Profit:", self.gross_profit())?;
         Ok(())
     }
 }

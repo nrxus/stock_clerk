@@ -39,6 +39,6 @@ fn main() -> Result<(), Box<Error>> {
         .map(Dollars::new)?;
 
     let calculation = clerk.calculate(&user_data, stock_price);
-    println!("RESULT IS:\n{}", calculation);
+    println!("{}", calculation);
     Ok(())
 }

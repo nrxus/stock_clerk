@@ -14,6 +14,7 @@ use std::{
 pub struct StockCalculation {
     grants: HashMap<Grant, Equity>,
     cost: StockCosts,
+    share_value: Dollars,
 }
 
 struct StockCosts {
@@ -27,11 +28,11 @@ pub struct StockClerk {
 }
 
 impl StockClerk {
-    pub fn calculate(&self, user: &UserData, stock_price: Dollars) -> StockCalculation {
+    pub fn calculate(&self, user: &UserData, share_value: Dollars) -> StockCalculation {
         let grants: HashMap<_, _> = user
             .grants
             .iter()
-            .map(|g| (g.clone(), Equity::new(g, &self.exercise_date, stock_price)))
+            .map(|g| (g.clone(), Equity::new(g, &self.exercise_date, share_value)))
             .collect();
         let immediate_cost = grants.iter().map(|(_, e)| e.vested.cost).sum();
         let profits = grants.iter().map(|(_, e)| e.vested.gross_profit()).sum();
@@ -58,6 +59,7 @@ impl StockClerk {
 
         StockCalculation {
             grants,
+            share_value,
             cost: StockCosts {
                 immediate: immediate_cost,
                 taxes,
@@ -68,14 +70,15 @@ impl StockClerk {
 
 impl Display for StockCalculation {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        writeln!(f, "Share Value: {}", self.share_value)?;
         writeln!(f, "Grants:")?;
         for (g, e) in &self.grants {
             writeln!(f, "  - {}", g)?;
             writeln!(f, "{}", e)?;
         }
         writeln!(f, "Buying All Vested:")?;
-        writeln!(f, "  cost: {}", self.cost.immediate)?;
-        writeln!(f, "  taxes:")?;
+        writeln!(f, "  Cost: {}", self.cost.immediate)?;
+        writeln!(f, "  Taxes:")?;
         for taxed in &self.cost.taxes {
             writeln!(
                 f,
@@ -92,8 +95,8 @@ impl Display for StockCalculation {
             .map(|(_, e)| e.vested.gross_profit())
             .sum();
         let total_taxes: Dollars = self.cost.taxes.iter().map(TaxedAmount::taxes).sum();
-        writeln!(f, "  Gross Profit: {}", gross_profit)?;
-        writeln!(f, "  Net Profit: {}", gross_profit - total_taxes)?;
+        writeln!(f, "  {:<13} {:>10}", "Gross Profit:", gross_profit)?;
+        writeln!(f, "  {:<13} {:>10}", "Net Profit:", gross_profit - total_taxes)?;
 
         Ok(())
     }
