@@ -1,5 +1,59 @@
 use dollars::Dollars;
+use equity::Equity;
 use taxes::{TaxTable, TaxUser};
+use user_data::{Grant, UserData};
+
+use chrono::{Date, Local};
+
+use std::{
+    collections::HashMap,
+    fmt::{self, Display, Formatter},
+};
+
+pub struct StockCalculation {
+    grants: HashMap<Grant, Equity>,
+    cost: StockCosts,
+}
+
+struct StockCosts {
+    immediate: Dollars,
+    taxes: HashMap<u8, Dollars>,
+}
+
+pub struct StockClerk {
+    pub tax_table: TaxTable,
+    pub exercise_date: Date<Local>,
+}
+
+impl StockClerk {
+    pub fn calculate(&self, user: &UserData, stock_price: Dollars) -> StockCalculation {
+        let grants: HashMap<_, _> = user
+            .grants
+            .iter()
+            .map(|g| (g.clone(), Equity::new(g, &self.exercise_date, stock_price)))
+            .collect();
+        let immediate_cost = grants.iter().map(|(_, e)| e.vested.cost).sum();
+        StockCalculation {
+            grants,
+            cost: StockCosts {
+                immediate: immediate_cost,
+                taxes: HashMap::new(),
+            },
+        }
+    }
+}
+
+impl Display for StockCalculation {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        writeln!(f, "Grants:")?;
+        for (g, e) in &self.grants {
+            writeln!(f, "  - {}", g)?;
+            writeln!(f, "{}", e)?;
+        }
+        writeln!(f, "Buying All Vested:")?;
+        writeln!(f, "  cost: {}", self.cost.immediate)
+    }
+}
 
 pub struct TaxCalculator {
     table: TaxTable,

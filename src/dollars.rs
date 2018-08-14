@@ -3,10 +3,11 @@ use serde::{Deserialize, Deserializer};
 use std::{
     cmp::{Ordering, PartialOrd},
     fmt::{self, Display, Formatter},
+    iter,
     ops::{Add, Mul, Sub},
 };
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Dollars {
     whole: u32,
     cents: u8,
@@ -33,6 +34,12 @@ impl<'de> Deserialize<'de> for Dollars {
 impl Display for Dollars {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
         write!(f, "${}.{}", self.whole, self.cents)
+    }
+}
+
+impl iter::Sum for Dollars {
+    fn sum<I: Iterator<Item = Dollars>>(iter: I) -> Dollars {
+        iter.fold(Dollars::new(0.0), |a, b| a + b)
     }
 }
 
