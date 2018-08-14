@@ -57,6 +57,12 @@ pub struct TaxedAmount {
     pub amount: Dollars,
 }
 
+impl TaxedAmount {
+    pub fn taxes(&self) -> Dollars {
+        self.amount * (f64::from(self.rate) / 100.0)
+    }
+}
+
 impl TaxTable {
     pub fn brackets_for<'s>(&'s self, user: &TaxUser) -> impl Iterator<Item = TaxedAmount> + 's {
         let info: &TaxInformation = &self.info[user.status];

@@ -1,11 +1,12 @@
 use dollars::Dollars;
 use equity::Equity;
-use taxes::{TaxTable, TaxUser};
+use taxes::{TaxTable, TaxUser, TaxedAmount};
 use user_data::{Grant, UserData};
 
 use chrono::{Date, Local};
 
 use std::{
+    cmp,
     collections::HashMap,
     fmt::{self, Display, Formatter},
 };
@@ -17,7 +18,7 @@ pub struct StockCalculation {
 
 struct StockCosts {
     immediate: Dollars,
-    taxes: HashMap<u8, Dollars>,
+    taxes: Vec<TaxedAmount>,
 }
 
 pub struct StockClerk {
@@ -44,14 +45,14 @@ impl StockClerk {
             .scan(profits, |untaxed_profits, taxed_value| {
                 if *untaxed_profits == Dollars::new(0.0) {
                     None
-                } else if *untaxed_profits <= taxed_value.amount {
-                    Some(*untaxed_profits)
                 } else {
-                    Some(taxed_value.amount)
-                }.map(|taxed_amount| {
-                    *untaxed_profits = *untaxed_profits - taxed_amount;
-                    (taxed_value.rate, taxed_amount)
-                })
+                    let amount = cmp::min(*untaxed_profits, taxed_value.amount);
+                    *untaxed_profits = *untaxed_profits - amount;
+                    Some(TaxedAmount {
+                        amount: amount,
+                        rate: taxed_value.rate,
+                    })
+                }
             })
             .collect();
 
@@ -74,7 +75,25 @@ impl Display for StockCalculation {
         }
         writeln!(f, "Buying All Vested:")?;
         writeln!(f, "  cost: {}", self.cost.immediate)?;
-        writeln!(f, "  taxes: {:?}", self.cost.taxes)?;
+        writeln!(f, "  taxes:")?;
+        for taxed in &self.cost.taxes {
+            writeln!(
+                f,
+                "    {}% * {} = {}",
+                taxed.rate,
+                taxed.amount,
+                taxed.taxes()
+            )?;
+        }
+        writeln!(f, "Selling All Vested:")?;
+        let gross_profit: Dollars = self
+            .grants
+            .iter()
+            .map(|(_, e)| e.vested.gross_profit())
+            .sum();
+        let total_taxes: Dollars = self.cost.taxes.iter().map(TaxedAmount::taxes).sum();
+        writeln!(f, "  Gross Profit: {}", gross_profit)?;
+        writeln!(f, "  Net Profit: {}", gross_profit - total_taxes)?;
 
         Ok(())
     }
