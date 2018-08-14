@@ -1,6 +1,8 @@
 use dollars::Dollars;
 use enum_map::EnumMap;
 
+use std::{cmp, f64, iter};
+
 #[derive(Debug, Enum, Deserialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum FilingStatus {
@@ -19,6 +21,9 @@ pub struct TaxUser {
 pub struct TaxTable {
     #[serde(flatten)]
     pub info: EnumMap<FilingStatus, TaxInformation>,
+    #[serde(skip)]
+    #[serde(default = "TaxBracket::max")]
+    max_bracket: TaxBracket,
 }
 
 #[derive(Deserialize)]
@@ -35,14 +40,47 @@ pub struct TaxBracket {
     pub base_amount: Dollars,
 }
 
+impl TaxBracket {
+    fn max() -> Self {
+        TaxBracket {
+            bracket_start: Dollars::max(),
+            rate: 100,
+            capital_gain_rate: 100,
+            base_amount: Dollars::max(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct TaxedAmount {
+    pub rate: u8,
+    pub amount: Dollars,
+}
+
 impl TaxTable {
-    pub fn bracket_for(&self, user: &TaxUser) -> &TaxBracket {
-        let brackets = &self.info[user.status].brackets;
-        brackets
+    pub fn brackets_for<'s>(&'s self, user: &TaxUser) -> impl Iterator<Item = TaxedAmount> + 's {
+        let info: &TaxInformation = &self.info[user.status];
+        let income = user.income - info.deduction;
+
+        let mut bracket_pairs = info
+            .brackets
             .windows(2)
-            .find(|pair| user.income <= pair[1].bracket_start)
-            .map(|pair| &pair[0])
-            .unwrap_or_else(|| &brackets[brackets.len() - 1])
+            .map(|pair| (&pair[0], &pair[1]))
+            .rev()
+            .peekable();
+
+        let bracket_pairs =
+            iter::once((bracket_pairs.peek().unwrap().1, &self.max_bracket)).chain(bracket_pairs);
+
+        bracket_pairs
+            .skip_while(move |(low, _)| low.bracket_start >= income)
+            .map(move |(low, high)| {
+                let high = cmp::min(high.bracket_start, income);
+                TaxedAmount {
+                    rate: low.rate,
+                    amount: high - low.bracket_start,
+                }
+            })
     }
 }
 
@@ -56,12 +94,18 @@ mod tests {
     fn tax_single() {
         let subject = subject();
         let user = TaxUser {
-            income: Dollars::new(160000.0),
+            income: Dollars::new(170000.0),
             status: FilingStatus::Single,
         };
 
-        let bracket = subject.bracket_for(&user);
-        assert_eq!(bracket, &subject.info[FilingStatus::Single].brackets[4]);
+        let mut brackets = subject.brackets_for(&user);
+        let taxed_value = brackets.next().unwrap();
+        assert_eq!(taxed_value.rate, 32);
+        assert_eq!(taxed_value.amount, Dollars::new(500.0));
+
+        let taxed_value = brackets.next().unwrap();
+        assert_eq!(taxed_value.rate, 24);
+        assert_eq!(taxed_value.amount, Dollars::new(75000.0));
     }
 
     #[test]
@@ -72,37 +116,50 @@ mod tests {
             status: FilingStatus::Married,
         };
 
-        let bracket = subject.bracket_for(&user);
-        assert_eq!(bracket, &subject.info[FilingStatus::Married].brackets[3]);
+        let mut brackets = subject.brackets_for(&user);
+        let taxed_value = brackets.next().unwrap();
+        assert_eq!(taxed_value.rate, 22);
+        assert_eq!(taxed_value.amount, Dollars::new(68600.0));
+
+        let taxed_value = brackets.next().unwrap();
+        assert_eq!(taxed_value.rate, 12);
+        assert_eq!(taxed_value.amount, Dollars::new(58350.0));
     }
 
     #[test]
     fn edge() {
         let subject = subject();
         let user = TaxUser {
-            income: Dollars::new(82500.0),
+            income: Dollars::new(94500.0),
             status: FilingStatus::MarriedSeparately,
         };
-        let bracket = subject.bracket_for(&user);
-        assert_eq!(
-            bracket,
-            &subject.info[FilingStatus::MarriedSeparately].brackets[2]
-        );
+
+        let mut brackets = subject.brackets_for(&user);
+        let taxed_value = brackets.next().unwrap();
+        assert_eq!(taxed_value.rate, 22);
+        assert_eq!(taxed_value.amount, Dollars::new(43800.0));
+
+        let taxed_value = brackets.next().unwrap();
+        assert_eq!(taxed_value.rate, 12);
+        assert_eq!(taxed_value.amount, Dollars::new(29175.0));
     }
 
     #[test]
     fn highest_bracket() {
         let subject = subject();
         let user = TaxUser {
-            income: Dollars::new(510000.0),
+            income: Dollars::new(520000.0),
             status: FilingStatus::HeadOfHousehold,
         };
 
-        let bracket = subject.bracket_for(&user);
-        assert_eq!(
-            bracket,
-            &subject.info[FilingStatus::HeadOfHousehold].brackets[6]
-        );
+        let mut brackets = subject.brackets_for(&user);
+        let taxed_value = brackets.next().unwrap();
+        assert_eq!(taxed_value.rate, 37);
+        assert_eq!(taxed_value.amount, Dollars::new(2000.0));
+
+        let taxed_value = brackets.next().unwrap();
+        assert_eq!(taxed_value.rate, 35);
+        assert_eq!(taxed_value.amount, Dollars::new(300000.0));
     }
 
     fn subject() -> TaxTable {

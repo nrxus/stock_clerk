@@ -1,13 +1,13 @@
 use serde::{Deserialize, Deserializer};
 
 use std::{
-    cmp::{Ordering, PartialOrd},
     fmt::{self, Display, Formatter},
     iter,
     ops::{Add, Mul, Sub},
+    u32,
 };
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct Dollars {
     whole: u32,
     cents: u8,
@@ -18,6 +18,13 @@ impl Dollars {
         Dollars {
             whole: amount as u32,
             cents: (amount.fract() * 100.0).round() as u8,
+        }
+    }
+
+    pub fn max() -> Self {
+        Dollars {
+            whole: u32::MAX,
+            cents: 99,
         }
     }
 }
@@ -99,16 +106,6 @@ impl Mul<f64> for Dollars {
         let cents = Dollars::from_parts(0, (multiplier * f64::from(self.cents)) as u32);
         let whole = Dollars::new(multiplier * f64::from(self.whole));
         whole + cents
-    }
-}
-
-impl PartialOrd for Dollars {
-    fn partial_cmp(&self, rhs: &Dollars) -> Option<Ordering> {
-        if self.whole == rhs.whole {
-            self.cents.partial_cmp(&rhs.cents)
-        } else {
-            self.whole.partial_cmp(&rhs.whole)
-        }
     }
 }
 
