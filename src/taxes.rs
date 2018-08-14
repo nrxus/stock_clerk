@@ -18,7 +18,7 @@ pub struct TaxUser {
 #[derive(Deserialize)]
 pub struct TaxTable {
     #[serde(flatten)]
-    info: EnumMap<FilingStatus, TaxInformation>,
+    pub info: EnumMap<FilingStatus, TaxInformation>,
 }
 
 #[derive(Deserialize)]
@@ -40,7 +40,7 @@ impl TaxTable {
         let brackets = &self.info[user.status].brackets;
         brackets
             .windows(2)
-            .find(|pair| pair[1].bracket_start > user.income)
+            .find(|pair| user.income <= pair[1].bracket_start)
             .map(|pair| &pair[0])
             .unwrap_or_else(|| &brackets[brackets.len() - 1])
     }
@@ -77,10 +77,24 @@ mod tests {
     }
 
     #[test]
+    fn edge() {
+        let subject = subject();
+        let user = TaxUser {
+            income: Dollars::new(82500.0),
+            status: FilingStatus::MarriedSeparately,
+        };
+        let bracket = subject.bracket_for(&user);
+        assert_eq!(
+            bracket,
+            &subject.info[FilingStatus::MarriedSeparately].brackets[2]
+        );
+    }
+
+    #[test]
     fn highest_bracket() {
         let subject = subject();
         let user = TaxUser {
-            income: Dollars::new(500000.0),
+            income: Dollars::new(510000.0),
             status: FilingStatus::HeadOfHousehold,
         };
 
