@@ -34,28 +34,24 @@ impl StockClerk {
             .collect();
         let immediate_cost = grants.iter().map(|(_, e)| e.vested.cost).sum();
         let profits = grants.iter().map(|(_, e)| e.vested.gross_profit()).sum();
-        let income = user.income + profits;
-
-        let brackets = self.tax_table.info[user.filing_status]
-            .brackets
-            .iter()
-            .rev()
-            .skip_while(|bracket| bracket.bracket_start > income);
-
-        let taxes = brackets
-            .scan(profits, |untaxed_profits, bracket| {
+        let tax_user = TaxUser {
+            income: user.income + profits,
+            status: user.filing_status,
+        };
+        let taxes = self
+            .tax_table
+            .brackets_for(&tax_user)
+            .scan(profits, |untaxed_profits, taxed_value| {
                 if *untaxed_profits == Dollars::new(0.0) {
                     None
-                } else if user.income > bracket.bracket_start {
-                    let next = *untaxed_profits;
-                    *untaxed_profits = Dollars::new(0.0);
-                    Some(next)
+                } else if *untaxed_profits <= taxed_value.amount {
+                    Some(*untaxed_profits)
                 } else {
-                    let remaining_delta = bracket.bracket_start - user.income;
-                    let next = *untaxed_profits - remaining_delta;
-                    *untaxed_profits = remaining_delta;
-                    Some(next)
-                }.map(|amount| (bracket.rate, amount))
+                    Some(taxed_value.amount)
+                }.map(|taxed_amount| {
+                    *untaxed_profits = *untaxed_profits - taxed_amount;
+                    (taxed_value.rate, taxed_amount)
+                })
             })
             .collect();
 

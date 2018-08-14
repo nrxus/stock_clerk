@@ -52,7 +52,7 @@ impl TaxBracket {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct TaxedAmount {
+pub struct TaxedAmount {
     pub rate: u8,
     pub amount: Dollars,
 }
