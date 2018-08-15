@@ -7,7 +7,7 @@ use std::{
     u32,
 };
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord, Default)]
 pub struct Dollars {
     whole: u32,
     cents: u8,
@@ -94,6 +94,14 @@ impl AddAssign for Dollars {
     }
 }
 
+impl Div for Dollars {
+    type Output = f64;
+
+    fn div(self, divisor: Dollars) -> f64 {
+        self.as_float() / divisor.as_float()
+    }
+}
+
 impl Mul<u16> for Dollars {
     type Output = Dollars;
 
@@ -112,14 +120,6 @@ impl Mul<f64> for Dollars {
         let cents = Dollars::from_parts(0, (multiplier * f64::from(self.cents)) as u32);
         let whole = Dollars::new(multiplier * f64::from(self.whole));
         whole + cents
-    }
-}
-
-impl Div<Dollars> for Dollars {
-    type Output = f64;
-
-    fn div(self, divisor: Dollars) -> f64 {
-        self.as_float() / divisor.as_float()
     }
 }
 

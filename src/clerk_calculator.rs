@@ -10,10 +10,12 @@ use std::{
     cmp,
     collections::HashMap,
     fmt::{self, Display, Formatter},
+    iter,
 };
 
 pub struct StockCalculation {
     grants: HashMap<Grant, Equity>,
+    total: Equity,
     taxes: Vec<TaxedAmount>,
     share_value: Dollars,
 }
@@ -30,7 +32,9 @@ impl StockClerk {
             .iter()
             .map(|g| (g.clone(), Equity::new(g, &self.exercise_date, share_value)))
             .collect();
-        let profits = grants.iter().map(|(_, e)| e.vested.gross_profit()).sum();
+        let total: Equity = grants.iter().map(|(_, e)| e.clone()).sum();
+        let profits = total.vested.gross_profit();
+
         let tax_user = TaxUser {
             income: user.income + profits,
             status: user.filing_status,
@@ -53,6 +57,7 @@ impl StockClerk {
             .collect();
 
         StockCalculation {
+            total,
             grants,
             share_value,
             taxes,
@@ -72,9 +77,10 @@ impl Display for StockCalculation {
             .map(|(g, e)| ((g, &e.vested), (g, &e.unvested)))
             .unzip();
 
-        let (vested_rows, vested_profit) = rows_for_grants(vested.into_iter());
+        let vested_rows = rows_for_grants(&self.total.vested, vested.into_iter());
         vested_table.extend(vested_rows);
-        unvested_table.extend(rows_for_grants(unvested.into_iter()).0);
+        let unvested_rows = rows_for_grants(&self.total.unvested, unvested.into_iter());
+        unvested_table.extend(unvested_rows);
 
         let mut taxes_owed = Dollars::new(0.0);
         let taxes_table = {
@@ -82,43 +88,41 @@ impl Display for StockCalculation {
             self.taxes
                 .iter()
                 .inspect(|t| taxes_owed += t.taxes())
-                .map(|t| row![t.rate, t.amount, t.taxes()])
+                .map(|t| row![r => t.rate, t.amount, t.taxes()])
                 .for_each(|r| {
                     table.add_row(r);
                 });
             table
         };
-
-        vested_table.add_row(row![r => "", "", "", "Taxes", taxes_table]);
-        vested_table.add_row(row![r => "", "", "", "Net Profit", vested_profit - taxes_owed]);
+        let total = &self.total.vested;
+        let cost = total.cost + taxes_owed;
+        let to_sell = (cost / self.share_value).ceil() as u32;
 
         writeln!(f, "SHARE VALUE: {}\n", self.share_value)?;
-        f.write_str("VESTED OPTIONS\n")?;
+        f.write_str("### VESTED OPTIONS ###\n")?;
         vested_table.fmt(f)?;
-        f.write_str("\n")?;
-        f.write_str("UNVESTED OPTIONS\n")?;
+        writeln!(f, "\n## TAXES ##")?;
+        taxes_table.fmt(f)?;
+
+        writeln!(f, "\n## RESULTS ##")?;
+        table!(["Cost + Taxes", "Net Profit", "Min Zero-Cost Sell"],
+               [r => cost, total.revenue - cost, to_sell])
+            .fmt(f)?;
+
+        f.write_str("\n***********************************************************************\n")?;
+        f.write_str("\n### UNVESTED OPTIONS ###\n")?;
         unvested_table.fmt(f)?;
         Ok(())
     }
 }
 
 fn rows_for_grants<'a>(
+    total: &Stock,
     equities: impl Iterator<Item = (&'a Grant, &'a Stock)>,
-) -> (Vec<Row>, Dollars) {
-    let mut count = 0;
-    let mut cost = Dollars::new(0.0);
-    let mut revenue = Dollars::new(0.0);
-
-    let mut rows: Vec<_> = equities
-        .inspect(|(_, s)| {
-            count += s.count;
-            cost += s.cost;
-            revenue += s.revenue;
-        })
-        .map(|(g, s)| row![r => g.start, s.count, s.cost, s.revenue, s.gross_profit()])
-        .collect();
-
-    let profit = revenue - cost;
-    rows.push(row![r => "Total", count, cost, revenue, revenue - cost]);
-    (rows, profit)
+) -> Vec<Row> {
+    equities
+        .map(|(g, s)| (g.start.to_string(), s))
+        .chain(iter::once(("Total".to_string(), total)))
+        .map(|(id, s)| row![r => id, s.count, s.cost, s.revenue, s.gross_profit()])
+        .collect()
 }

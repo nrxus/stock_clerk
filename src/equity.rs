@@ -3,10 +3,29 @@ use user_data::Grant;
 
 use chrono::Datelike;
 
-#[derive(Debug)]
+use std::{iter, ops::Add};
+
+#[derive(Debug, Default, Clone)]
 pub struct Equity {
     pub vested: Stock,
     pub unvested: Stock,
+}
+
+impl Add for Equity {
+    type Output = Equity;
+
+    fn add(self, adder: Equity) -> Equity {
+        Equity {
+            vested: self.vested + adder.vested,
+            unvested: self.unvested + adder.unvested,
+        }
+    }
+}
+
+impl iter::Sum for Equity {
+    fn sum<I: Iterator<Item = Equity>>(iter: I) -> Equity {
+        iter.fold(Equity::default(), |a, b| a + b)
+    }
 }
 
 impl Equity {
@@ -20,7 +39,7 @@ impl Equity {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Stock {
     pub cost: Dollars,
     pub revenue: Dollars,
@@ -38,6 +57,18 @@ impl Stock {
 
     pub fn gross_profit(&self) -> Dollars {
         self.revenue - self.cost
+    }
+}
+
+impl Add for Stock {
+    type Output = Stock;
+
+    fn add(self, adder: Stock) -> Stock {
+        Stock {
+            cost: self.cost + adder.cost,
+            revenue: self.revenue + adder.revenue,
+            count: self.count + adder.count,
+        }
     }
 }
 
