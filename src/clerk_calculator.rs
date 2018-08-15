@@ -50,7 +50,7 @@ impl StockClerk {
                     let amount = cmp::min(*untaxed_profits, taxed_value.amount);
                     *untaxed_profits = *untaxed_profits - amount;
                     Some(TaxedAmount {
-                        amount: amount,
+                        amount,
                         rate: taxed_value.rate,
                     })
                 }

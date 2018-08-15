@@ -21,12 +21,12 @@ use dollars::Dollars;
 use taxes::TaxTable;
 use user_data::UserData;
 
-use chrono::{Date, Local, NaiveDate, TimeZone};
+use chrono::{Local, NaiveDate, TimeZone};
 use docopt::Docopt;
 
 use std::{error::Error, fs::File, process::exit};
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 Calculate Stock Information
 Usage:
     stock_clerk (-f | --file) <file> [--date=DATE] [--price=PRICE]
