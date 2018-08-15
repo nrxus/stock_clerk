@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer};
 use std::{
     fmt::{self, Display, Formatter},
     iter,
-    ops::{Add, AddAssign, Mul, Sub},
+    ops::{Add, AddAssign, Div, Mul, Sub},
     u32,
 };
 
@@ -115,12 +115,24 @@ impl Mul<f64> for Dollars {
     }
 }
 
+impl Div<Dollars> for Dollars {
+    type Output = f64;
+
+    fn div(self, divisor: Dollars) -> f64 {
+        self.as_float() / divisor.as_float()
+    }
+}
+
 impl Dollars {
     fn from_parts(whole: u32, cents: u32) -> Self {
         Dollars {
             whole: whole + cents / 100,
             cents: (cents % 100) as u8,
         }
+    }
+
+    fn as_float(self) -> f64 {
+        f64::from(self.whole) + f64::from(self.cents) / 100.0
     }
 }
 
@@ -144,6 +156,13 @@ mod tests {
         let actual = amount * multiplier;
         let expected = Dollars::new(765.45); //765.4581 truncated
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn divides_dollars() {
+        let amount = Dollars::new(5.00);
+        let divisor = Dollars::new(2.00);
+        assert_eq!(amount / divisor, 2.5);
     }
 
     #[test]
