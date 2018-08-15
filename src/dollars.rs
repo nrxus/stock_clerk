@@ -27,6 +27,10 @@ impl Dollars {
             cents: 99,
         }
     }
+
+    pub fn zero() -> Self {
+        Dollars::default()
+    }
 }
 
 impl<'de> Deserialize<'de> for Dollars {
@@ -46,7 +50,7 @@ impl Display for Dollars {
 
 impl iter::Sum for Dollars {
     fn sum<I: Iterator<Item = Dollars>>(iter: I) -> Dollars {
-        iter.fold(Dollars::new(0.0), |a, b| a + b)
+        iter.fold(Dollars::zero(), |a, b| a + b)
     }
 }
 

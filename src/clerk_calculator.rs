@@ -44,7 +44,7 @@ impl StockClerk {
             .tax_table
             .brackets_for(&tax_user)
             .scan(profits, |untaxed_profits, taxed_value| {
-                if *untaxed_profits == Dollars::new(0.0) {
+                if *untaxed_profits == Dollars::zero() {
                     None
                 } else {
                     let amount = cmp::min(*untaxed_profits, taxed_value.amount);
@@ -84,7 +84,7 @@ impl Display for StockCalculation {
         let unvested_rows = rows_for_grants(&self.total.unvested, unvested.into_iter());
         unvested_table.extend(unvested_rows);
 
-        let mut taxes_owed = Dollars::new(0.0);
+        let mut taxes_owed = Dollars::zero();
         let taxes_table = {
             let mut table = table!(["Rate", "Taxed Amount", "Owed Taxed"]);
             self.taxes
