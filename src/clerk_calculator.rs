@@ -18,6 +18,7 @@ pub struct StockCalculation {
     total: Equity,
     taxes: Vec<TaxedAmount>,
     share_value: Dollars,
+    exercise_date: Date<Local>,
 }
 
 pub struct StockClerk {
@@ -61,6 +62,7 @@ impl StockClerk {
             grants,
             share_value,
             taxes,
+            exercise_date: self.exercise_date,
         }
     }
 }
@@ -98,8 +100,10 @@ impl Display for StockCalculation {
         let cost = total.cost + taxes_owed;
         let to_sell = (cost / self.share_value).ceil() as u32;
 
-        writeln!(f, "SHARE VALUE: {}\n", self.share_value)?;
-        f.write_str("### VESTED OPTIONS ###\n")?;
+        f.write_str("### INPUTS ###\n")?;
+        writeln!(f, "Share Value: {}", self.share_value)?;
+        writeln!(f, "Exercise Date: {}", self.exercise_date)?;
+        f.write_str("\n### VESTED OPTIONS ###\n")?;
         vested_table.fmt(f)?;
         writeln!(f, "\n## TAXES ##")?;
         taxes_table.fmt(f)?;
@@ -109,7 +113,6 @@ impl Display for StockCalculation {
                [r => cost, total.revenue - cost, to_sell])
             .fmt(f)?;
 
-        f.write_str("\n***********************************************************************\n")?;
         f.write_str("\n### UNVESTED OPTIONS ###\n")?;
         unvested_table.fmt(f)?;
         Ok(())
