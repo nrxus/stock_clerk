@@ -3,8 +3,6 @@ use user_data::Grant;
 
 use chrono::Datelike;
 
-use std::fmt::{self, Display, Formatter};
-
 #[derive(Debug)]
 pub struct Equity {
     pub vested: Stock,
@@ -25,8 +23,8 @@ impl Equity {
 #[derive(Debug, Clone, Copy)]
 pub struct Stock {
     pub cost: Dollars,
-    revenue: Dollars,
-    count: u16,
+    pub revenue: Dollars,
+    pub count: u16,
 }
 
 impl Stock {
@@ -40,15 +38,6 @@ impl Stock {
 
     pub fn gross_profit(&self) -> Dollars {
         self.revenue - self.cost
-    }
-}
-
-impl Display for Stock {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        writeln!(f, "      {:<14} {:>10}", "Cost:", self.cost)?;
-        writeln!(f, "      {:<14} {:>10}", "Revenue:", self.revenue)?;
-        write!(f, "      {:<14} {:>10}", "Gross Profit:", self.gross_profit())?;
-        Ok(())
     }
 }
 
@@ -71,13 +60,5 @@ impl<T: Datelike> AwardDate for T {
         let years = later.year() - self.year();
         let months = later.month() as i32 - self.month() as i32;
         (years * 12 + months) as u32
-    }
-}
-
-impl Display for Equity {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        writeln!(f, "    Vested: \n{}", self.vested)?;
-        writeln!(f, "    Unvested: \n{}", self.unvested)?;
-        Ok(())
     }
 }

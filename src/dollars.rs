@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer};
 use std::{
     fmt::{self, Display, Formatter},
     iter,
-    ops::{Add, Mul, Sub},
+    ops::{Add, AddAssign, Mul, Sub},
     u32,
 };
 
@@ -85,6 +85,12 @@ impl Add for Dollars {
         } else {
             Dollars { whole, cents }
         }
+    }
+}
+
+impl AddAssign for Dollars {
+    fn add_assign(&mut self, adder: Dollars) {
+        *self = *self + adder
     }
 }
 

@@ -6,6 +6,8 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate enum_map;
+#[macro_use]
+extern crate prettytable;
 
 mod clerk_calculator;
 mod dollars;
