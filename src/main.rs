@@ -29,16 +29,19 @@ use std::{error::Error, fs::File, process::exit};
 const USAGE: &str = "
 Calculate Stock Information
 Usage:
-    stock_clerk (-f | --file) <file> [--date=DATE] [--price=PRICE]
+    stock_clerk -f FILE [options]
+    stock_clerk -h
+
 Options:
-    -f FILE, --file FILE       User Data JSON
-    --date=DATE                Exercise Date (YYYY-MM-DD). Defaults to today
-    --price=PRICE              Share Price. Defaults to the current share price
+    -f, --file FILE       User data JSON file
+    -d, --date DATE       Exercise date (YYYY-MM-DD). Defaults to today
+    -p, --price PRICE     Share price. Defaults to the current share price
+    -h, --help            Show this screen
 ";
 
 #[derive(Debug, Deserialize)]
 struct Args {
-    arg_file: String,
+    flag_file: String,
     flag_date: Option<NaiveDate>,
     flag_price: Option<Dollars>,
 }
@@ -47,7 +50,7 @@ fn main() -> Result<(), Box<Error>> {
     let args: Args = Docopt::new(USAGE)
         .and_then(|dopt| dopt.deserialize())
         .unwrap_or_else(|e| e.exit());
-    let file = File::open(args.arg_file)?;
+    let file = File::open(args.flag_file)?;
     let stock_price = args.flag_price.unwrap_or_else(|| {
         let http_client = reqwest::Client::new();
         let response = http_client
