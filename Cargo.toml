@@ -4,11 +4,10 @@ version = "0.1.0"
 authors = ["Andres <andresnrx@gmail.com>"]
 
 [dependencies]
+serde = { version = ">=1.0", features = ["serde_derive"] }
 chrono = { version = ">=0.4", features = ["serde"] }
 enum-map = { version = ">=0.4", features = ["serde"] }
 reqwest = ">=0.8"
-serde = ">=1.0"
-serde_derive = ">=1.0"
 serde_json = ">=1.0"
 prettytable-rs = ">=0.7"
 docopt = ">=1.0.0"

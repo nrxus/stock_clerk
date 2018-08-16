@@ -1,8 +1,7 @@
 extern crate chrono;
 extern crate reqwest;
-extern crate serde;
 #[macro_use]
-extern crate serde_derive;
+extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate enum_map;
@@ -51,25 +50,7 @@ fn main() -> Result<(), Box<Error>> {
         .and_then(|dopt| dopt.deserialize())
         .unwrap_or_else(|e| e.exit());
     let file = File::open(args.flag_file)?;
-    let stock_price = args.flag_price.unwrap_or_else(|| {
-        let http_client = reqwest::Client::new();
-        let response = http_client
-            .get("https://api.iextrading.com/1.0/stock/pvtl/price")
-            .send()
-            .and_then(|mut r| r.text())
-            .unwrap_or_else(|e| {
-                eprintln!("could not fetch current PVTL stock price");
-                eprintln!("try passing it in with -price=<PRICE>");
-                eprintln!("got error: {}", e.to_string());
-                exit(1);
-            });
-        response.parse().map(Dollars::new).unwrap_or_else(|e| {
-            eprintln!("could not parse fetched PVTL stock price: '{}'", response);
-            eprintln!("try passing it in with -price=<PRICE>");
-            eprintln!("got error: {}", e.to_string());
-            exit(1);
-        })
-    });
+    let stock_price = args.flag_price.unwrap_or_else(fetch_price);
     let exercise_date = args
         .flag_date
         .map(|d| Local.from_local_date(&d).unwrap())
@@ -84,4 +65,34 @@ fn main() -> Result<(), Box<Error>> {
     let calculation = clerk.calculate(&user_data, stock_price);
     println!("{}", calculation);
     Ok(())
+}
+
+fn fetch_price() -> Dollars {
+    try_fetch_price().unwrap_or_else(|e| {
+        eprintln!("could not fetch current PVTL stock price");
+        eprintln!("try passing it in with --price PRICE");
+        eprintln!("cause: {}", e);
+        exit(1);
+    })
+}
+
+fn try_fetch_price() -> Result<Dollars, String> {
+    let http_client = reqwest::Client::new();
+    let response = http_client
+        .get("https://api.iextrading.com/1.0/stock/pvtl/price")
+        .send()
+        .and_then(|mut r| r.text())
+        .map_err(|e| {
+            format!(
+                "Failed to make request for PVTL stock price\n. Cause: {}",
+                e
+            )
+        })?;
+
+    response.parse().map(Dollars::new).map_err(|e| {
+        format!(
+            "Failed to parse PVTL stock price: '{}'\n. Cause: {}",
+            response, e
+        )
+    })
 }
