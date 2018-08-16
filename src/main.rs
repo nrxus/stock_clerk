@@ -8,6 +8,7 @@ extern crate enum_map;
 #[macro_use]
 extern crate prettytable;
 extern crate docopt;
+extern crate failure;
 
 mod clerk_calculator;
 mod dollars;
@@ -20,10 +21,13 @@ use dollars::Dollars;
 use taxes::TaxTable;
 use user_data::UserData;
 
-use chrono::{Local, NaiveDate, TimeZone};
+use chrono::{Date, Local, NaiveDate, TimeZone};
 use docopt::Docopt;
+use failure::ResultExt;
 
-use std::{error::Error, fs::File, process::exit};
+use std::fs::File;
+
+type Result<T> = std::result::Result<T, failure::Context<String>>;
 
 const USAGE: &str = "
 Calculate Stock Information
@@ -45,54 +49,65 @@ struct Args {
     flag_price: Option<Dollars>,
 }
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<()> {
     let args: Args = Docopt::new(USAGE)
         .and_then(|dopt| dopt.deserialize())
         .unwrap_or_else(|e| e.exit());
-    let file = File::open(args.flag_file)?;
-    let stock_price = args.flag_price.unwrap_or_else(fetch_price);
-    let exercise_date = args
-        .flag_date
-        .map(|d| Local.from_local_date(&d).unwrap())
-        .unwrap_or_else(Local::today);
-    let tax_table: TaxTable = serde_json::from_str(include_str!("../taxes.json"))?;
-    let user_data: UserData = serde_json::from_reader(file)?;
+    let input = args.validate()?;
+    let tax_table: TaxTable = serde_json::from_str(include_str!("../taxes.json")).unwrap();
     let clerk = StockClerk {
         tax_table,
-        exercise_date,
+        exercise_date: input.exercise_date,
     };
 
-    let calculation = clerk.calculate(&user_data, stock_price);
+    let calculation = clerk.calculate(&input.user_data, input.stock_price);
     println!("{}", calculation);
     Ok(())
 }
 
-fn fetch_price() -> Dollars {
-    try_fetch_price().unwrap_or_else(|e| {
-        eprintln!("could not fetch current PVTL stock price");
-        eprintln!("try passing it in with --price PRICE");
-        eprintln!("cause: {}", e);
-        exit(1);
-    })
+struct ValidatedInput {
+    user_data: UserData,
+    stock_price: Dollars,
+    exercise_date: Date<Local>,
 }
 
-fn try_fetch_price() -> Result<Dollars, String> {
+impl Args {
+    fn validate(self) -> Result<ValidatedInput> {
+        let user_data = File::open(&self.flag_file)
+            .context(format!("Failed to open file: '{}'", self.flag_file))
+            .and_then(|f| {
+                serde_json::from_reader(f)
+                    .context(format!("Failed to parse file: '{}'", self.flag_file))
+            })?;
+        let stock_price = self
+            .flag_price
+            .ok_or(())
+            .or_else(|_| fetch_price())
+            .context(format!(
+                "Failed to fetch current PVTL stock price.\nTry passing it with --price PRICE"
+            ))?;
+        let exercise_date = self
+            .flag_date
+            .map(|d| Local.from_local_date(&d).unwrap())
+            .unwrap_or_else(Local::today);
+        Ok(ValidatedInput {
+            user_data,
+            stock_price,
+            exercise_date,
+        })
+    }
+}
+
+fn fetch_price() -> Result<Dollars> {
     let http_client = reqwest::Client::new();
     let response = http_client
         .get("https://api.iextrading.com/1.0/stock/pvtl/price")
         .send()
         .and_then(|mut r| r.text())
-        .map_err(|e| {
-            format!(
-                "Failed to make request for PVTL stock price\n. Cause: {}",
-                e
-            )
-        })?;
+        .context(format!("Failed to make request for PVTL stock price"))?;
 
-    response.parse().map(Dollars::new).map_err(|e| {
-        format!(
-            "Failed to parse PVTL stock price: '{}'\n. Cause: {}",
-            response, e
-        )
-    })
+    response
+        .parse()
+        .map(Dollars::new)
+        .context(format!("Failed to parse PVTL stock price: '{}'", response))
 }
